@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
     private val asyncInflater by lazy { AsyncLayoutInflater(this) }
     private val onIndicatorPositionChangedListener = OnIndicatorPositionChangedListener {
         // Jump to the current indicator position
-        if (User_Point != it) {
+        if (User_Point == null) {
             // Set the flag to true to indicate that the action has been performed
             // Perform the action here
             binding.mapView.getMapboxMap().setCamera(CameraOptions.Builder().center(it).build())
