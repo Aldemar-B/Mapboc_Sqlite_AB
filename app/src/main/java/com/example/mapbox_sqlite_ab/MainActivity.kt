@@ -92,7 +92,6 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
                 binding.mapView.getMapboxMap().pixelForCoordinate(it)
         }
         User_Point = it
-
     }
     var Pstyle: String? = null
     var bitmap: Bitmap? = null
