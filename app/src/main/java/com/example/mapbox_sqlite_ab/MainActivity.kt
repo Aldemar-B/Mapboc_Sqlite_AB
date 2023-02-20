@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
             binding.mapView.apply {
                 getMapboxMap().loadStyleUri(Style.MAPBOX_STREETS) {
                     // Disable scroll gesture, since we are updating the camera position based on the indicator location.
-                    gestures.scrollEnabled = true
+                    gestures.scrollEnabled = false
                     gestures.addOnMapClickListener { point ->
                         location
                             .isLocatedAt(point) { isPuckLocatedAtPoint ->
