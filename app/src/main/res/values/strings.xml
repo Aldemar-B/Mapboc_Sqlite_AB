@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Mapbox_Sqlite_AB</string>
+    <string name="mapbox_access_token">pk.eyJ1IjoiYWxkZW1hcmIiLCJhIjoiY2xlNjZ0MXZjMGp0OTNybXM5bnI3eTczcCJ9.RpwHKIUUl7ZeHTiUxAMbBA</string>
+    <string name="content_description_close">Close callout</string>
+    <string name="version">1.0A</string>
+</resources>

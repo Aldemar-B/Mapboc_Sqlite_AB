@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/MAPBOX_STREETS"
+            android:title="Calles"
+            android:checked="true"
+            />
+        <item
+            android:id="@+id/OUTDOORS"
+            android:title="Aire libre"/>
+        <item
+            android:id="@+id/SATELLITE"
+            android:title="Satelite"/>
+        <item
+            android:id="@+id/SATELLITE_STREETS"
+            android:title="Salite y calles"/>
+        <item
+            android:id="@+id/LIGHT"
+            android:title="Claro"/>
+        <item
+            android:id="@+id/DARK"
+            android:title="Oscuro"/>
+        <item
+            android:id="@+id/TRAFFIC_DAY"
+            android:title="Trafico dia"/>
+        <item
+            android:id="@+id/TRAFFIC_NIGHT"
+            android:title="Trafico Noche"/>
+
+    </group>
+</menu>
