@@ -90,8 +90,8 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
             binding.mapView.getMapboxMap().setCamera(CameraOptions.Builder().center(it).build())
             binding.mapView.gestures.focalPoint =
                 binding.mapView.getMapboxMap().pixelForCoordinate(it)
-            User_Point = it
         }
+        User_Point = it
 
     }
     var Pstyle: String? = null
