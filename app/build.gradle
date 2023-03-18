@@ -11,7 +11,7 @@ android {
         applicationId "com.example.mapbox_sqlite_ab"
         minSdk 26
         targetSdk 33
-        versionCode 1
+        versionCode 2
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -48,7 +48,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 
     implementation "com.mapbox.navigation:ui-dropin:2.10.1"
-    implementation 'com.mapbox.maps:android:10.11.0'
+    implementation "com.mapbox.maps:android:10.11.2"
     implementation("com.google.android.gms:play-services-location:18.0.0")
     implementation 'com.readystatesoftware.sqliteasset:sqliteassethelper:2.0.1'
     //alertas personalizadas

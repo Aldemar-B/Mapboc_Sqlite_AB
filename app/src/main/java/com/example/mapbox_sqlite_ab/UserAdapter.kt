@@ -41,7 +41,7 @@ class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private var onPointClickListener: OnPointClickListener? = null
 
     fun bind(map: map_points) {
-        itemView.findViewById<TextView>(R.id.name_point).text = "PUNTO: " + map.Name.toString()
+        itemView.findViewById<TextView>(R.id.name_point).text = map.Name.toString()
         itemView.findViewById<Button>(R.id.focus_ubication).setOnClickListener {
             val point = Point.fromLngLat(map.Point_longitud, map.Point_latitude)
             onPointClickListener?.onPointClick(point)

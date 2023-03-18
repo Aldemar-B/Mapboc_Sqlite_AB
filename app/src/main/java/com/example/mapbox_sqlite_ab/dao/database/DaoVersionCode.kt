@@ -6,7 +6,6 @@ import java.util.*
 
 
 class DaoVersionCode(db: SQLiteDatabase?) {
-    private val versionCode = 0
     private var db: SQLiteDatabase? = null
     fun loadVersionCode(): Int {
         var rs: Cursor? = null

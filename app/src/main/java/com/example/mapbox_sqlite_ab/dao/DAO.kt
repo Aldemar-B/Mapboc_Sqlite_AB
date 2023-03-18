@@ -65,12 +65,15 @@ class DAO : Service() {
         return ok
     }
 
-    fun save_p(mText: String, point: Point) {
+    fun save_p(mText: String, point: Point, flag: Boolean) {
         try {
             val campo = ContentValues()
             campo.put("Name", mText)
             campo.put("Point_latitude", point.latitude())
             campo.put("Point_longitud", point.longitude())
+            if(flag){
+                campo.put("Especial", 1)
+            }
             db!!.insert("map_points", null, campo)
         } catch (e: java.lang.Exception) {
             e.printStackTrace()
@@ -118,6 +121,7 @@ class DAO : Service() {
         data?.Name = rs.getString(rs.getColumnIndex("Name"))
         data?.Point_latitude = rs.getDouble(rs.getColumnIndex("Point_latitude"))
         data?.Point_longitud = rs.getDouble(rs.getColumnIndex("Point_longitud"))
+        data?.Espectial = rs.getInt(rs.getColumnIndex("Especial"))
     }
 
 }

@@ -1,9 +1,10 @@
 package com.example.mapbox_sqlite_ab
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.app.ProgressDialog
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.Bitmap
@@ -14,13 +15,9 @@ import android.os.Bundle
 import android.os.IBinder
 import android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS
 import android.text.InputType
-import android.util.Log
 import android.util.TypedValue
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.view.View.GONE
-import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.asynclayoutinflater.view.AsyncLayoutInflater
@@ -73,8 +70,10 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
     private lateinit var locationPermissionHelper: LocationPermissionHelper
     private lateinit var binding: ActivityMainBinding
     private var fusedLocationClient: FusedLocationProviderClient? = null
+    private var markerView: View? = null
     private var User_Point: Point? = null
     private var isButtonPressed = false
+    private var isButtonbookPressed = false
     private var favoritebookPressed = false
     private val pointList = CopyOnWriteArrayList<Feature>()
     private var markerId = 0
@@ -97,6 +96,9 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
     var bitmap: Bitmap? = null
     var items_user: ArrayList<map_points>? = null
     var recyclerView: RecyclerView? = null
+    var flag: Boolean = false
+    private val markerViews = mutableMapOf<String, View>()
+    var menu_bar: LinearLayout? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,9 +107,10 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
         setContentView(binding.root)
         //find ID
         var butonPosition = findViewById<FloatingActionButton>(R.id.Ubication_user)
-        var favorite_ubication_user =
-            findViewById<FloatingActionButton>(R.id.favorite_allubications_user)
+        var favorite_ubication_user = findViewById<FloatingActionButton>(R.id.favorite_allubications_user)
         var menu = findViewById<FloatingActionButton>(R.id.favorite_ubications)
+        menu_bar =  findViewById<LinearLayout>(R.id.menu_bar)
+        menu_bar?.isGone = true
         recyclerView = findViewById<RecyclerView>(R.id.usersRecyclerView)
         mapView = findViewById(R.id.mapView)
         //creacion de base de datos
@@ -194,7 +197,12 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
         favorite_ubication_user?.setOnClickListener {
             isButtonPressed = !isButtonPressed
             if (isButtonPressed) {
-                reload_PM(isButtonPressed)
+                if(pointList.isNullOrEmpty()){
+                    reload_PM(isButtonPressed)
+                }else{
+                    reload_PM(!isButtonPressed)
+                    isButtonPressed = !isButtonPressed
+                }
             } else {
                 reload_PM(isButtonPressed)
             }
@@ -205,25 +213,52 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
 
     }
 
+    private fun createMarkerView(context: Context): View {
+        val markerHeight = context.resources.getDimension(R.dimen.marker_height)
+        val imageView = ImageView(context)
+        imageView.setImageResource(R.drawable.circle_point)
+        imageView.layoutParams = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            Gravity.CENTER or Gravity.BOTTOM
+        ).apply {
+            bottomMargin = markerHeight.toInt()
+        }
+        return imageView
+    }
+
     private fun getLocation() {
         binding.mapView.getMapboxMap().setCamera(CameraOptions.Builder().zoom(14.0).center(User_Point).build())
     }
 
     fun carga_vpoint() {
-        favoritebookPressed = !favoritebookPressed
-        if (favoritebookPressed) {
-            items_user = dao?.search_pm()
-            val adapter = UserAdapter(items_user!!)
-            recyclerView?.isGone = false
-            adapter.setOnPointClickListener(this)
-            recyclerView?.adapter = adapter
-            recyclerView?.layoutManager = LinearLayoutManager(this@MainActivity)
-        } else {
-            recyclerView?.isGone = true
+        items_user = dao?.search_pm()
+        if(items_user.isNullOrEmpty()){
+            SweetAlertDialog(this, SweetAlertDialog.ERROR_TYPE)
+                .setTitleText("Oops...")
+                .setContentText("No tienes puntos favoritos guardados!")
+                .show()
+        }else{
+            favoritebookPressed = !favoritebookPressed
+            if (favoritebookPressed) {
+                val adapter = UserAdapter(items_user!!)
+                menu_bar?.isGone = false
+                recyclerView?.isGone = false
+                adapter.setOnPointClickListener(this)
+                recyclerView?.adapter = adapter
+                recyclerView?.layoutManager = LinearLayoutManager(this@MainActivity,LinearLayoutManager.HORIZONTAL, false)
+            } else {
+                menu_bar?.isGone = true
+                recyclerView?.isGone = true
+            }
         }
     }
 
-
+    fun reload_vpoint(){
+        favoritebookPressed = false
+        menu_bar?.isGone = true
+        recyclerView?.isGone = true
+    }
 
     private fun prepareStyle(styleUri: String, bitmap: Bitmap) = style(styleUri) {
         +image(BLUE_ICON_ID) {
@@ -239,7 +274,8 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
         +symbolLayer(LAYER_ID, SOURCE_ID) {
             iconImage(BLUE_ICON_ID)
             iconAnchor(IconAnchor.BOTTOM)
-            iconAllowOverlap(false)
+            iconAllowOverlap(true)
+            iconIgnorePlacement(true)
         }
         if (styleUri == Style.MAPBOX_STREETS) {
             Pstyle = Style.MAPBOX_STREETS
@@ -319,8 +355,27 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
     }
 
     override fun onMapLongClick(point: Point): Boolean {
-        val markerId = addMarkerAndReturnId(point)
-        addViewAnnotation(point, markerId)
+        //ALERTA custom
+        SweetAlertDialog(this, SweetAlertDialog.CUSTOM_IMAGE_TYPE)
+            .setCustomImage(R.drawable.blue_marker_view)
+            .setTitleText("Punto nuevo")
+            .setContentText("Eliga el punto que desea crear")
+            .setConfirmButtonBackgroundColor(Color.parseColor("#0065b2"))
+            .setCancelButtonBackgroundColor(Color.parseColor("#b24c00"))
+            .setConfirmText("Normal")
+            .setConfirmClickListener { sDialog ->
+                sDialog.dismissWithAnimation()
+                val markerId = addMarkerAndReturnId(point)
+                addViewAnnotation(point, markerId)
+            }
+            .setCancelButton("Especial") { sDialog -> sDialog.dismissWithAnimation()
+                sDialog.dismissWithAnimation()
+                flag = true
+                val markerId = addMarkerAndReturnId_Especial(point)
+                addViewAnnotation(point, markerId)
+
+            }
+            .show()
         return true
     }
 
@@ -364,14 +419,75 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
         return currentId
     }
 
+    private fun addMarkerAndReturnId_Especial(point: Point): String {
+        val currentId = "${MARKER_ID_PREFIX}${(markerId++)}"
+        pointList.add(Feature.fromGeometry(point, null, currentId))
+        val markerView = createMarkerView(this)
+        val featureCollection = FeatureCollection.fromFeatures(pointList)
+        mapboxMap.getStyle { style ->
+            style.getSourceAs<GeoJsonSource>(SOURCE_ID)?.featureCollection(featureCollection)
+
+        }
+        // create marker view and add it to the map
+        viewAnnotationManager.addViewAnnotation(
+            markerView,
+            viewAnnotationOptions {
+                geometry(point)
+                allowOverlap(true)
+            }
+        )
+        // save marker view for future use
+        markerViews[currentId] = markerView
+        // add pulsing animation
+        val animator = ValueAnimator.ofFloat(1f, 1.2f, 1f)
+        animator.duration = 1000
+        animator.repeatCount = ValueAnimator.INFINITE
+        animator.addUpdateListener {
+            val value = it.animatedValue as Float
+            markerView.scaleX = value
+            markerView.scaleY = value
+        }
+        animator.start()
+        return currentId
+    }
+    private fun removeAnnotationForId(id: String) {
+        markerViews[id]?.let { markerView ->
+            viewAnnotationManager.removeViewAnnotation(markerView)
+            markerViews.remove(id)
+        }
+        pointList.removeAll { it.id() == id }
+        updateFeatureCollection()
+    }
+
+    private fun updateFeatureCollection() {
+        val featureCollection = FeatureCollection.fromFeatures(pointList)
+        mapboxMap.getStyle { style ->
+            style.getSourceAs<GeoJsonSource>(SOURCE_ID)?.featureCollection(featureCollection)
+        }
+    }
+
+
+
     private fun reload_PM(isButtonPressed: Boolean) {
         items_user = dao?.search_pm()
         if (!items_user.isNullOrEmpty()) {
             for (i in items_user!!) {
-                val Point = Point.fromLngLat(i.Point_longitud, i.Point_latitude)
-                val markerId = addMarkerAndReturnId(Point)
-                reloadAddViewAnnotation(Point, markerId, i.Name, isButtonPressed)
+                if(i.Espectial == 1 ){
+                    val Point = Point.fromLngLat(i.Point_longitud, i.Point_latitude)
+                    val markerId = addMarkerAndReturnId_Especial(Point)
+                    reloadAddViewAnnotation(Point, markerId, i.Name, isButtonPressed)
+                }else{
+                    val Point = Point.fromLngLat(i.Point_longitud, i.Point_latitude)
+                    val markerId = addMarkerAndReturnId(Point)
+                    reloadAddViewAnnotation(Point, markerId, i.Name, isButtonPressed)
+                }
             }
+            items_user = null
+        }else{
+            SweetAlertDialog(this, SweetAlertDialog.ERROR_TYPE)
+                .setTitleText("Oops...")
+                .setContentText("No tienes puntos favoritos guardados!")
+                .show()
         }
     }
 
@@ -408,17 +524,20 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
                     .setConfirmText("SI")
                     .setConfirmClickListener { sDialog ->
                         sDialog.dismissWithAnimation()
+                        reload_vpoint()
                         dao?.delete_p(point)
-                        viewAnnotationManager.removeViewAnnotation(viewAnnotation)
                         pointList.remove(Feature.fromGeometry(point, null, markerId))
                         mapboxMap = binding.mapView.getMapboxMap().apply {
                             loadStyle(styleExtension = prepareStyle(Pstyle!!, bitmap!!)) {
+                                viewAnnotationManager.removeViewAnnotation(viewAnnotation)
+                                removeAnnotationForId(markerId)
                                 addOnMapClickListener(this@MainActivity)
                                 addOnMapLongClickListener(this@MainActivity)
                             }
                         }
                     }
-                    .setCancelButton("NO") { sDialog -> sDialog.dismissWithAnimation() }
+                    .setCancelButton("NO") { sDialog -> sDialog.dismissWithAnimation()
+                        viewAnnotation.visibility = View.GONE}
                     .show()
             }
             viewAnnotation.findViewById<Button>(R.id.selectButton).setOnClickListener { b ->
@@ -433,11 +552,12 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
                     input.inputType = InputType.TYPE_CLASS_TEXT
                     builder.setView(input)
                     builder.setPositiveButton("OK") { dialog, which ->
-                        m_Text = input.text.toString()
-                        viewAnnotation.findViewById<TextView>(R.id.textNativeView).text =
-                            m_Text.format(point.latitude(), point.longitude())
-                        dao?.save_p(m_Text, point)
+                        m_Text = input.text.toString().trim()
+                        viewAnnotation.findViewById<TextView>(R.id.textNativeView).text = m_Text.format(point.latitude(), point.longitude())
+                        dao?.save_p(m_Text, point,flag)
+                        flag = false
                         button.text = "GUARDADO!"
+                        reload_vpoint()
                         items_user = dao?.search_pm()
                     }
                     builder.setNegativeButton("Cancel") { dialog, which -> dialog.cancel() }
@@ -499,18 +619,22 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
                             .setConfirmText("SI")
                             .setConfirmClickListener { sDialog ->
                                 sDialog.dismissWithAnimation()
+                                reload_vpoint()
                                 dao?.delete_p(point)
-                                viewAnnotationManager.removeViewAnnotation(viewAnnotation)
                                 pointList.remove(Feature.fromGeometry(point, null, markerId))
                                 mapboxMap = binding.mapView.getMapboxMap().apply {
                                     loadStyle(styleExtension = prepareStyle(Pstyle!!, bitmap!!)) {
+                                        viewAnnotationManager.removeViewAnnotation(viewAnnotation)
+                                        removeAnnotationForId(markerId)
                                         addOnMapClickListener(this@MainActivity)
                                         addOnMapLongClickListener(this@MainActivity)
                                     }
                                 }
 
                             }
-                            .setCancelButton("NO") { sDialog -> sDialog.dismissWithAnimation() }
+                            .setCancelButton("NO") { sDialog -> sDialog.dismissWithAnimation()
+                                viewAnnotation.visibility = View.GONE
+                            }
                             .show()
                     }
                 var selectButton = viewAnnotation.findViewById<Button>(R.id.selectButton)
@@ -738,11 +862,27 @@ class MainActivity : AppCompatActivity(), OnMapClickListener, OnMapLongClickList
     }
 
     override fun onPointClick(point: Point) {
+        menu_bar?.isGone = true
         favoritebookPressed = false
         recyclerView?.isGone = true
-        reload_PM(true)
-        binding.mapView.getMapboxMap()
-            .setCamera(CameraOptions.Builder().zoom(14.0).center(point).build())
+ //       reload_PM(true)
+//        binding.mapView.getMapboxMap()
+//            .setCamera(CameraOptions.Builder().zoom(14.0).center(point).build())
+        if (pointList.isNullOrEmpty()) {
+            reload_PM(false)
+            reload_PM(true)
+                    binding.mapView.getMapboxMap().setCamera(CameraOptions.Builder().zoom(14.0).center(point).build())
+        }else{
+
+            if(pointList.size == items_user?.size){
+                binding.mapView.getMapboxMap().setCamera(CameraOptions.Builder().zoom(14.0).center(point).build())
+            }else{
+                reload_PM(false)
+                reload_PM(true)
+                binding.mapView.getMapboxMap().setCamera(CameraOptions.Builder().zoom(14.0).center(point).build())
+            }
+
+        }
     }
 
 }
